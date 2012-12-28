@@ -1,11 +1,16 @@
 package com.github.deltawhy.invitationonly;
 
+import java.util.List;
+
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class InvitationOnly extends JavaPlugin {
+	ConfigAccessor userConfig;
+	
 	@Override
 	public boolean onCommand(CommandSender sender, Command command,
 			String label, String[] args) {
@@ -15,14 +20,33 @@ public class InvitationOnly extends JavaPlugin {
 			if (args.length != 1) return false;
 			String username = args[0];
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
-			//TODO: update quota
+			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
+				int playerQuota = userConfig.getConfig().getInt("members."+username+".invites-left", 0);
+				if (playerQuota == 0) {
+					player.sendMessage(ChatColor.RED + "You don't have any invites left!");
+					return true;
+				} else if (playerQuota > 0) {
+					playerQuota--;
+					userConfig.getConfig().set("members."+username+".invites-left", playerQuota);
+				}
+			}
 			invite(username, senderName);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
 			String username = args[0];
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
-			//TODO: check if sender was the inviter, update quota
+			if (!senderName.equalsIgnoreCase(whoInvited(username))) {
+				sender.sendMessage(ChatColor.RED + "You didn't invite " + username + "!");
+				return true;
+			}
+			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
+				int playerQuota = userConfig.getConfig().getInt("members."+username+".invites-left", -1);
+				if (playerQuota >= 0) {
+					playerQuota++;
+					userConfig.getConfig().set("members."+username+".invites-left", playerQuota);
+				}
+			}
 			uninvite(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("invitequota")) {
@@ -69,27 +93,27 @@ public class InvitationOnly extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
-
+		userConfig.saveConfig();
 	}
 
 	@Override
 	public void onEnable() {
-		
+		saveDefaultConfig();
+		userConfig = new ConfigAccessor(this, "users.yml");
+		userConfig.reloadConfig();
 	}
 	
 	public boolean isMember(String username) {
-		//TODO
-		return false;
+		//TODO: check if player is op
+		return userConfig.getConfig().contains("members."+username);
 	}
 	
 	public boolean isInvited(String username) {
-		//TODO
-		return false;
+		return userConfig.getConfig().contains("invited."+username);
 	}
 	
 	public String whoInvited(String username) {
-		//TODO
-		return "";
+		return userConfig.getConfig().getString("invited."+username+".invited-by", "");
 	}
 	
 	public boolean isMemberOnline() {
@@ -104,23 +128,41 @@ public class InvitationOnly extends JavaPlugin {
 	
 	//Won't check quotas here!
 	public void invite(String username, String whoInvited) {
-		//TODO
+		userConfig.getConfig().createSection("invited."+username).set("invited-by", whoInvited);
+		userConfig.saveConfig();
 	}
 	
 	//Won't check who invited!
 	public void uninvite(String username) {
-		
+		userConfig.getConfig().set("invited."+username, null);
+		userConfig.saveConfig();
 	}
 	
 	public void promoteToMember(String username) {
-		
+		userConfig.getConfig().set("invited."+username, null);
+		userConfig.getConfig().set("members."+username+".invites-left", getConfig().getInt("invite-quota", 0));
+		userConfig.saveConfig();
 	}
 	
 	private void voteApprove(String username, String voterName) {
-		
+		List<String> approveVotes = userConfig.getConfig().getStringList("invited."+username+".approve-votes");
+		if (!approveVotes.contains(voterName)) approveVotes.add(voterName);
+		if (approveVotes.size() >= getConfig().getInt("approve-votes-needed", 0)) {
+			promoteToMember(username);
+		} else {
+			userConfig.getConfig().set("invited."+username+".approve-votes", approveVotes);
+			userConfig.saveConfig();
+		}
 	}
 	
 	private void voteBan(String username, String voterName) {
-		
+		List<String> banVotes = userConfig.getConfig().getStringList("invited."+username+".ban-votes");
+		if (!banVotes.contains(voterName)) banVotes.add(voterName);
+		if (banVotes.size() >= getConfig().getInt("ban-votes-needed", 0)) {
+			getServer().getOfflinePlayer(username).setBanned(true);
+		} else {
+			userConfig.getConfig().set("invited."+username+".ban-votes", banVotes);
+			userConfig.saveConfig();
+		}
 	}
 }
