@@ -1,0 +1,6 @@
+invite-quota: 5
+approve-votes-needed: 5
+ban-votes-needed: 2
+require-member-online: false
+require-op-online: false
+open-when-op-online: false
