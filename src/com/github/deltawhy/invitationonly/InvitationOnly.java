@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class InvitationOnly extends JavaPlugin {
 	ConfigAccessor userConfig;
+	PlayerListener playerListener;
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command command,
@@ -21,13 +22,13 @@ public class InvitationOnly extends JavaPlugin {
 			String username = args[0];
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", 0);
+				int playerQuota = userConfig.getConfig().getInt("members."+senderName.toLowerCase()+".invites-left", 0);
 				if (playerQuota == 0) {
 					player.sendMessage(ChatColor.RED + "You don't have any invites left!");
 					return true;
 				} else if (playerQuota > 0) {
 					playerQuota--;
-					userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+senderName.toLowerCase()+".invites-left", playerQuota);
 				}
 			}
 			invite(username, senderName);
@@ -41,10 +42,10 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", -1);
+				int playerQuota = userConfig.getConfig().getInt("members."+senderName.toLowerCase()+".invites-left", -1);
 				if (playerQuota >= 0) {
 					playerQuota++;
-					userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+senderName.toLowerCase()+".invites-left", playerQuota);
 				}
 			}
 			uninvite(username);
@@ -101,10 +102,11 @@ public class InvitationOnly extends JavaPlugin {
 		saveDefaultConfig();
 		userConfig = new ConfigAccessor(this, "users.yml");
 		userConfig.reloadConfig();
+		playerListener = new PlayerListener(this);
+		getServer().getPluginManager().registerEvents(playerListener, this);
 	}
 	
 	public boolean isMember(String username) {
-		//TODO: check if player is op
 		return userConfig.getConfig().contains("members."+username.toLowerCase());
 	}
 	
