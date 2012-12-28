@@ -14,14 +14,16 @@ public class InvitationOnly extends JavaPlugin {
 		if (command.getName().equalsIgnoreCase("invite")) {
 			if (args.length != 1) return false;
 			String username = args[0];
-			//TODO: add user to probation whitelist
+			String senderName = (player == null ? "$CONSOLE$" : player.getName());
+			//TODO: update quota
+			invite(username, senderName);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
 			String username = args[0];
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
-			//TODO: check if sender was the inviter
-			//TODO: remove user from probation whitelist
+			//TODO: check if sender was the inviter, update quota
+			uninvite(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("invitequota")) {
 			if (player == null && args.length == 0) return false;
@@ -40,19 +42,25 @@ public class InvitationOnly extends JavaPlugin {
 		} else if (command.getName().equalsIgnoreCase("approveinvite")) {
 			if (args.length != 1) return false;
 			String username = args[0];
-			//TODO: add user to member list
+			promoteToMember(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteapprove")) {
+			if (player == null) {
+				sender.sendMessage("This command can not be used from the console.");
+				return true;
+			}
 			if (args.length != 1) return false;
 			String username = args[0];
-			//TODO: log votes
-			//TODO: approve if threshold reached
+			voteApprove(username, player.getName());
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteban")) {
+			if (player == null) {
+				sender.sendMessage("This command can not be used from the console.");
+				return true;
+			}
 			if (args.length != 1) return false;
 			String username = args[0];
-			//TODO: log votes
-			//TODO: approve if threshold reached
+			voteBan(username, player.getName());
 			return true;
 		} else {
 			return false;
@@ -61,13 +69,58 @@ public class InvitationOnly extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
-		// TODO Auto-generated method stub
-		super.onDisable();
+
 	}
 
 	@Override
 	public void onEnable() {
-		// TODO Auto-generated method stub
-		super.onEnable();
+		
+	}
+	
+	public boolean isMember(String username) {
+		//TODO
+		return false;
+	}
+	
+	public boolean isInvited(String username) {
+		//TODO
+		return false;
+	}
+	
+	public String whoInvited(String username) {
+		//TODO
+		return "";
+	}
+	
+	public boolean isMemberOnline() {
+		//TODO
+		return false;
+	}
+	
+	public boolean isOpOnline() {
+		//TODO
+		return false;
+	}
+	
+	//Won't check quotas here!
+	public void invite(String username, String whoInvited) {
+		//TODO
+	}
+	
+	//Won't check who invited!
+	public void uninvite(String username) {
+		
+	}
+	
+	public void promoteToMember(String username) {
+		
+	}
+	
+	private void voteApprove(String username, String voterName) {
+		
+	}
+	
+	private void voteBan(String username, String voterName) {
+		
 	}
 }
