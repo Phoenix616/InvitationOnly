@@ -7,6 +7,9 @@ permissions:
   invitationonly.approve:
     description: Approve players for full membership.
     default: op
+  invitationonly.unapprove:
+    description: Revoke memberships.
+    default: op
   invitationonly.quota:
     description: Change or refill other players' invite quotas.
     default: op
@@ -42,6 +45,10 @@ commands:
     usage: /approveinvite <username>
     description: Approve a probationary member or add a full member without probation.
     permission: invitationonly.approve
+  unapprove:
+    usage: /unapprove <username>
+    description: Remove a player from the member list. Other players can re-invite them.
+    permission: invitationonly.unapprove
   voteapprove:
     usage: /voteapprove <username>
     description: Vote to approve a probationary member.

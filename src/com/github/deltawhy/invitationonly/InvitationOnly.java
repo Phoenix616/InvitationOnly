@@ -21,13 +21,13 @@ public class InvitationOnly extends JavaPlugin {
 			String username = args[0];
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+username+".invites-left", 0);
+				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", 0);
 				if (playerQuota == 0) {
 					player.sendMessage(ChatColor.RED + "You don't have any invites left!");
 					return true;
 				} else if (playerQuota > 0) {
 					playerQuota--;
-					userConfig.getConfig().set("members."+username+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", playerQuota);
 				}
 			}
 			invite(username, senderName);
@@ -41,10 +41,10 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+username+".invites-left", -1);
+				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", -1);
 				if (playerQuota >= 0) {
 					playerQuota++;
-					userConfig.getConfig().set("members."+username+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", playerQuota);
 				}
 			}
 			uninvite(username);
@@ -67,6 +67,11 @@ public class InvitationOnly extends JavaPlugin {
 			if (args.length != 1) return false;
 			String username = args[0];
 			promoteToMember(username);
+			return true;
+		} else if (command.getName().equalsIgnoreCase("unapprove")) {
+			if (args.length != 1) return false;
+			String username = args[0];
+			removeFromMembers(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteapprove")) {
 			if (player == null) {
@@ -92,11 +97,6 @@ public class InvitationOnly extends JavaPlugin {
 	}
 
 	@Override
-	public void onDisable() {
-		userConfig.saveConfig();
-	}
-
-	@Override
 	public void onEnable() {
 		saveDefaultConfig();
 		userConfig = new ConfigAccessor(this, "users.yml");
@@ -105,15 +105,15 @@ public class InvitationOnly extends JavaPlugin {
 	
 	public boolean isMember(String username) {
 		//TODO: check if player is op
-		return userConfig.getConfig().contains("members."+username);
+		return userConfig.getConfig().contains("members."+username.toLowerCase());
 	}
 	
 	public boolean isInvited(String username) {
-		return userConfig.getConfig().contains("invited."+username);
+		return userConfig.getConfig().contains("invited."+username.toLowerCase());
 	}
 	
 	public String whoInvited(String username) {
-		return userConfig.getConfig().getString("invited."+username+".invited-by", "");
+		return userConfig.getConfig().getString("invited."+username.toLowerCase()+".invited-by", "");
 	}
 	
 	public boolean isMemberOnline() {
@@ -128,40 +128,46 @@ public class InvitationOnly extends JavaPlugin {
 	
 	//Won't check quotas here!
 	public void invite(String username, String whoInvited) {
-		userConfig.getConfig().createSection("invited."+username).set("invited-by", whoInvited);
+		userConfig.getConfig().createSection("invited."+username.toLowerCase()).set("invited-by", whoInvited.toLowerCase());
 		userConfig.saveConfig();
 	}
 	
 	//Won't check who invited!
 	public void uninvite(String username) {
-		userConfig.getConfig().set("invited."+username, null);
+		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
 		userConfig.saveConfig();
 	}
 	
 	public void promoteToMember(String username) {
-		userConfig.getConfig().set("invited."+username, null);
-		userConfig.getConfig().set("members."+username+".invites-left", getConfig().getInt("invite-quota", 0));
+		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
+		userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", getConfig().getInt("invite-quota", 0));
+		userConfig.saveConfig();
+	}
+	
+	public void removeFromMembers(String username) {
+		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
+		userConfig.getConfig().set("members."+username.toLowerCase(), null);
 		userConfig.saveConfig();
 	}
 	
 	private void voteApprove(String username, String voterName) {
-		List<String> approveVotes = userConfig.getConfig().getStringList("invited."+username+".approve-votes");
-		if (!approveVotes.contains(voterName)) approveVotes.add(voterName);
+		List<String> approveVotes = userConfig.getConfig().getStringList("invited."+username.toLowerCase()+".approve-votes");
+		if (!approveVotes.contains(voterName.toLowerCase())) approveVotes.add(voterName.toLowerCase());
 		if (approveVotes.size() >= getConfig().getInt("approve-votes-needed", 0)) {
 			promoteToMember(username);
 		} else {
-			userConfig.getConfig().set("invited."+username+".approve-votes", approveVotes);
+			userConfig.getConfig().set("invited."+username.toLowerCase()+".approve-votes", approveVotes);
 			userConfig.saveConfig();
 		}
 	}
 	
 	private void voteBan(String username, String voterName) {
-		List<String> banVotes = userConfig.getConfig().getStringList("invited."+username+".ban-votes");
+		List<String> banVotes = userConfig.getConfig().getStringList("invited."+username.toLowerCase()+".ban-votes");
 		if (!banVotes.contains(voterName)) banVotes.add(voterName);
 		if (banVotes.size() >= getConfig().getInt("ban-votes-needed", 0)) {
 			getServer().getOfflinePlayer(username).setBanned(true);
 		} else {
-			userConfig.getConfig().set("invited."+username+".ban-votes", banVotes);
+			userConfig.getConfig().set("invited."+username.toLowerCase()+".ban-votes", banVotes);
 			userConfig.saveConfig();
 		}
 	}
