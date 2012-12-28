@@ -21,7 +21,7 @@ permissions:
     default: false
   invitationonly.vote.approve:
     description: Vote to approve a new player.
-    default: false
+    default: true
   invitationonly.vote.ban:
     description: Vote to ban a new player (full members are safe).
     default: true
