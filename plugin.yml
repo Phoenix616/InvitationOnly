@@ -1,0 +1,52 @@
+name: Invitation Only
+author: DeltaWhy
+website: https://github.com/DeltaWhy/bukkit-invitation-only
+main: com.github.deltawhy.invitationonly.InvitationOnly
+version: 0.1.0
+permissions:
+  invitationonly.approve:
+    description: Approve players for full membership.
+    default: op
+  invitationonly.quota:
+    description: Change or refill other players' invite quotas.
+    default: op
+  invitationonly.invite:
+    description: Invite new players (subject to probation).
+    default: true
+  invitationonly.uninvite:
+    description: Revoke an invitation and kick the player - other players can still re-invite them.
+    default: true
+  invitationonly.invite.unlimited:
+    description: Invite new players without quota.
+    default: false
+  invitationonly.vote.approve:
+    description: Vote to approve a new player.
+    default: false
+  invitationonly.vote.ban:
+    description: Vote to ban a new player (full members are safe).
+    default: true
+commands:
+  invite:
+    usage: /invite <username>
+    description: Invite a new player (subject to probation).
+    permission: invitationonly.invite
+  uninvite:
+    usage: /uninvite <username>
+    description: Revoke an invitation and kick the player. Other players can still re-invite them.
+    permission: invitationonly.uninvite
+  invitequota:
+    usage: /invitequota [username] [quota]
+    description: View or update a player's invite quota.
+    permission: invitationonly.quota
+  approveinvite:
+    usage: /approveinvite <username>
+    description: Approve a probationary member or add a full member without probation.
+    permission: invitationonly.approve
+  voteapprove:
+    usage: /voteapprove <username>
+    description: Vote to approve a probationary member.
+    permission: invitationonly.vote.approve
+  voteban:
+    usage: /voteban <username>
+    description: Vote to ban a probationary member.
+    permission: invitationonly.vote.ban
