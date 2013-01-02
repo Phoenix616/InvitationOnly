@@ -22,6 +22,18 @@ public class InvitationOnly extends JavaPlugin {
 			if (args.length != 1) return false;
 			String username = getServer().getOfflinePlayer(args[0]).getName();
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
+			if (player != null && !isMember(senderName)) {
+				player.sendMessage(ChatColor.RED + "You don't have permission to invite people.");
+				return true;
+			}
+			if (isMember(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is already a member!");
+				return true;
+			}
+			if (isInvited(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is already invited!");
+				return true;
+			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
 				int playerQuota = userConfig.getConfig().getInt("members."+senderName.toLowerCase()+".invites-left", 0);
 				if (playerQuota == 0) {
@@ -54,6 +66,10 @@ public class InvitationOnly extends JavaPlugin {
 		} else if (command.getName().equalsIgnoreCase("invitequota")) {
 			if (player == null && args.length == 0) return false;
 			String username = (args.length > 0) ? getServer().getOfflinePlayer(args[0]).getName() : player.getName();
+			if (!isMember(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is not a member!");
+				return true;
+			}
 			if (args.length < 2) {
 				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", 0);
 				sender.sendMessage(ChatColor.GREEN + username + " has " + playerQuota + " invites left.");
@@ -75,6 +91,10 @@ public class InvitationOnly extends JavaPlugin {
 		} else if (command.getName().equalsIgnoreCase("unapprove")) {
 			if (args.length != 1) return false;
 			String username = getServer().getOfflinePlayer(args[0]).getName();
+			if (!isMember(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is not a member!");
+				return true;
+			}
 			removeFromMembers(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteapprove")) {
@@ -82,8 +102,20 @@ public class InvitationOnly extends JavaPlugin {
 				sender.sendMessage("This command can not be used from the console.");
 				return true;
 			}
+			if (player != null && !isMember(player.getName())) {
+				player.sendMessage(ChatColor.RED + "Only members can vote.");
+				return true;
+			}
 			if (args.length != 1) return false;
 			String username = getServer().getOfflinePlayer(args[0]).getName();
+			if (isMember(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is already a member!");
+				return true;
+			}
+			if (!isInvited(username)) {
+				sender.sendMessage(ChatColor.RED + username + " hasn't been invited!");
+				return true;
+			}
 			voteApprove(username, player.getName());
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteban")) {
@@ -91,8 +123,20 @@ public class InvitationOnly extends JavaPlugin {
 				sender.sendMessage("This command can not be used from the console.");
 				return true;
 			}
+			if (player != null && !isMember(player.getName())) {
+				player.sendMessage(ChatColor.RED + "Only members can vote.");
+				return true;
+			}
 			if (args.length != 1) return false;
 			String username = getServer().getOfflinePlayer(args[0]).getName();
+			if (isMember(username)) {
+				sender.sendMessage(ChatColor.RED + username + " is a member!");
+				return true;
+			}
+			if (!isInvited(username)) {
+				sender.sendMessage(ChatColor.RED + username + " hasn't been invited!");
+				return true;
+			}
 			voteBan(username, player.getName());
 			return true;
 		} else {
