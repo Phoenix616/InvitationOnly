@@ -3,6 +3,7 @@ package com.github.deltawhy.invitationonly;
 import java.util.List;
 
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -19,7 +20,7 @@ public class InvitationOnly extends JavaPlugin {
 		
 		if (command.getName().equalsIgnoreCase("invite")) {
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
 				int playerQuota = userConfig.getConfig().getInt("members."+senderName.toLowerCase()+".invites-left", 0);
@@ -35,7 +36,7 @@ public class InvitationOnly extends JavaPlugin {
 			return true;
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			String senderName = (player == null ? "$CONSOLE$" : player.getName());
 			if (!senderName.equalsIgnoreCase(whoInvited(username))) {
 				sender.sendMessage(ChatColor.RED + "You didn't invite " + username + "!");
@@ -52,7 +53,7 @@ public class InvitationOnly extends JavaPlugin {
 			return true;
 		} else if (command.getName().equalsIgnoreCase("invitequota")) {
 			if (player == null && args.length == 0) return false;
-			String username = (args.length > 0) ? args[0] : player.getName();
+			String username = (args.length > 0) ? getServer().getOfflinePlayer(args[0]).getName() : player.getName();
 			if (args.length < 2) {
 				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", 0);
 				sender.sendMessage(ChatColor.GREEN + username + " has " + playerQuota + " invites left.");
@@ -68,12 +69,12 @@ public class InvitationOnly extends JavaPlugin {
 			return true;
 		} else if (command.getName().equalsIgnoreCase("approveinvite")) {
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			promoteToMember(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("unapprove")) {
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			removeFromMembers(username);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteapprove")) {
@@ -82,7 +83,7 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			voteApprove(username, player.getName());
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteban")) {
@@ -91,7 +92,7 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			if (args.length != 1) return false;
-			String username = args[0];
+			String username = getServer().getOfflinePlayer(args[0]).getName();
 			voteBan(username, player.getName());
 			return true;
 		} else {
@@ -138,45 +139,69 @@ public class InvitationOnly extends JavaPlugin {
 	public void invite(String username, String whoInvited) {
 		userConfig.getConfig().createSection("invited."+username.toLowerCase()).set("invited-by", whoInvited.toLowerCase());
 		userConfig.saveConfig();
+		if (whoInvited.equals("$CONSOLE$")) whoInvited = "An admin";
+		getServer().broadcastMessage(ChatColor.YELLOW + whoInvited + " invited " + username + " to the server!");
 	}
 	
 	//Won't check who invited!
 	public void uninvite(String username) {
 		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
 		userConfig.saveConfig();
+		if (getServer().getOfflinePlayer(username).isOnline() && !isMember(username) && (!getConfig().getBoolean("open-when-op-online", false) || !isOpOnline())) {
+			getServer().getPlayerExact(username).kickPlayer("You were un-invited!");
+		}
+		getServer().broadcastMessage(ChatColor.YELLOW + username + " was un-invited. You may re-invite them.");
 	}
 	
 	public void promoteToMember(String username) {
 		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
 		userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", getConfig().getInt("invite-quota", 0));
 		userConfig.saveConfig();
+		getServer().broadcastMessage(ChatColor.YELLOW + username + " is now a member! Congratulations!");
 	}
 	
 	public void removeFromMembers(String username) {
 		userConfig.getConfig().set("invited."+username.toLowerCase(), null);
 		userConfig.getConfig().set("members."+username.toLowerCase(), null);
 		userConfig.saveConfig();
+		if (getServer().getOfflinePlayer(username).isOnline() && (!getConfig().getBoolean("open-when-op-online") || !isOpOnline())) {
+			getServer().getPlayerExact(username).kickPlayer("You are no longer a member!");
+		}
+		getServer().broadcastMessage(ChatColor.YELLOW + username + " is no longer a member. You may re-invite them.");
 	}
 	
 	private void voteApprove(String username, String voterName) {
 		List<String> approveVotes = userConfig.getConfig().getStringList("invited."+username.toLowerCase()+".approve-votes");
 		if (!approveVotes.contains(voterName.toLowerCase())) approveVotes.add(voterName.toLowerCase());
-		if (approveVotes.size() >= getConfig().getInt("approve-votes-needed", 0)) {
+		int votesReceived = approveVotes.size();
+		int votesNeeded = getConfig().getInt("approve-votes-needed", 0);
+		if (votesReceived >= votesNeeded) {
+			getServer().broadcastMessage(ChatColor.YELLOW + "The tribe has spoken!");
 			promoteToMember(username);
 		} else {
-			userConfig.getConfig().set("invited."+username.toLowerCase()+".approve-votes", approveVotes);
-			userConfig.saveConfig();
+			getServer().broadcastMessage(ChatColor.YELLOW + voterName + " voted to make " + username
+					+ " a member. " + (votesNeeded - votesReceived) + " more votes needed.");
 		}
+		userConfig.getConfig().set("invited."+username.toLowerCase()+".approve-votes", approveVotes);
+		userConfig.saveConfig();
 	}
 	
 	private void voteBan(String username, String voterName) {
 		List<String> banVotes = userConfig.getConfig().getStringList("invited."+username.toLowerCase()+".ban-votes");
 		if (!banVotes.contains(voterName)) banVotes.add(voterName);
-		if (banVotes.size() >= getConfig().getInt("ban-votes-needed", 0)) {
-			getServer().getOfflinePlayer(username).setBanned(true);
+		int votesReceived = banVotes.size();
+		int votesNeeded = getConfig().getInt("ban-votes-needed", 0);
+		if (votesReceived >= votesNeeded) {
+			OfflinePlayer player = getServer().getOfflinePlayer(username);
+			player.setBanned(true);
+			if (player.isOnline()) getServer().getPlayerExact(username).kickPlayer("You have been banned!");
+			getServer().broadcastMessage(ChatColor.YELLOW + "The tribe has spoken!");
+			getServer().broadcastMessage(ChatColor.YELLOW + username + " has been banned and cannot be re-invited.");;
 		} else {
-			userConfig.getConfig().set("invited."+username.toLowerCase()+".ban-votes", banVotes);
-			userConfig.saveConfig();
+			getServer().broadcastMessage(ChatColor.YELLOW + voterName + " voted to ban " + username
+					+ ". " + (votesNeeded - votesReceived) + " more votes needed.");
 		}
+		userConfig.getConfig().set("invited."+username.toLowerCase()+".ban-votes", banVotes);
+		userConfig.saveConfig();
 	}
 }
