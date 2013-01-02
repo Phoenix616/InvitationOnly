@@ -54,11 +54,13 @@ public class InvitationOnly extends JavaPlugin {
 			if (player == null && args.length == 0) return false;
 			String username = (args.length > 0) ? args[0] : player.getName();
 			if (args.length < 2) {
-				//TODO: show quota for user
+				int playerQuota = userConfig.getConfig().getInt("members."+username.toLowerCase()+".invites-left", 0);
+				sender.sendMessage(ChatColor.GREEN + username + " has " + playerQuota + " invites left.");
 			} else if (args.length == 2) {
 				try {
 					int quota = Integer.parseInt(args[1]);
-					//TODO: update quota for user
+					userConfig.getConfig().set("members."+username.toLowerCase()+".invites-left", quota);
+					userConfig.saveConfig();
 				} catch (NumberFormatException e) {
 					return false;
 				}
@@ -119,12 +121,16 @@ public class InvitationOnly extends JavaPlugin {
 	}
 	
 	public boolean isMemberOnline() {
-		//TODO
+		for (Player p : getServer().getOnlinePlayers()) {
+			if (isMember(p.getName())) return true;
+		}
 		return false;
 	}
 	
 	public boolean isOpOnline() {
-		//TODO
+		for (Player p : getServer().getOnlinePlayers()) {
+			if (p.isOp()) return true;
+		}
 		return false;
 	}
 	
