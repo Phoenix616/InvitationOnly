@@ -17,11 +17,12 @@ public class PlayerListener implements Listener {
 		if (e.getResult() != PlayerLoginEvent.Result.ALLOWED) return;
 		Player player = e.getPlayer();
 		if (player.isOp()) return;
-		if (plugin.isMember(player.getName())) return;
-		if (plugin.isInvited(player.getName())) {
+		if (plugin.isMember(player.getUniqueId())) return;
+		if (plugin.isInvited(player.getUniqueId())) {
 			if (plugin.getConfig().getBoolean("require-op-online", false) && !plugin.isOpOnline()) {
 				e.setResult(PlayerLoginEvent.Result.KICK_WHITELIST);
 				e.setKickMessage("You can't join this server unless an op is online!");
+				if (plugin.getConfig().getBoolean("broadcast-failed-logins", true)) plugin.getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " tried to join but there is no OP online.");
 			} else if (plugin.getConfig().getBoolean("require-member-online", false) && !plugin.isMemberOnline()) {
 				e.setResult(PlayerLoginEvent.Result.KICK_WHITELIST);
 				e.setKickMessage("You can't join this server unless a member is online!");
@@ -32,7 +33,7 @@ public class PlayerListener implements Listener {
 			//Not a member, not invited...
 			e.setResult(PlayerLoginEvent.Result.KICK_WHITELIST);
 			e.setKickMessage("You must be invited to join this server!");
-			plugin.getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " tried to join but hasn't been invited.");
+			if (plugin.getConfig().getBoolean("broadcast-failed-logins", true)) plugin.getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " tried to join but hasn't been invited.");
 		}
 	}
 }
