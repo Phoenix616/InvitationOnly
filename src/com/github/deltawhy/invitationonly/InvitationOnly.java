@@ -18,6 +18,7 @@ public class InvitationOnly extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command command,
 			String label, String[] args) {
 		Player player = ((sender instanceof Player) ? (Player)sender : null);
+		UUID senderid = (player == null ? UUID.fromString("00000000-0000-0000-0000-000000000000") : player.getUniqueId());
 		
 		if (command.getName().equalsIgnoreCase("invite")) {
 			if (args.length != 1) return false;
@@ -35,31 +36,30 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+player.getUniqueId().toString()+".invites-left", 0);
+				int playerQuota = userConfig.getConfig().getInt("members."+senderid.toString()+".invites-left", 0);
 				if (playerQuota == 0) {
 					player.sendMessage(ChatColor.RED + "You don't have any invites left!");
 					return true;
 				} else if (playerQuota > 0) {
 					playerQuota--;
-					userConfig.getConfig().set("members."+player.getUniqueId().toString()+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+senderid.toString()+".invites-left", playerQuota);
 					player.sendMessage(ChatColor.GREEN + "You have " + playerQuota + " invites left!");
 				}
 			}
-			invite(userid, player.getUniqueId());
+			invite(userid, senderid);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
-			// String senderName = (player == null ? "$CONSOLE$" : player.getName()); TODO
-			if (!player.getUniqueId().equals(whoInvited(userid))) {
+			if (!senderid.equals(whoInvited(userid))) {
 				sender.sendMessage(ChatColor.RED + "You didn't invite " + getServer().getOfflinePlayer(userid).getName() + "!");
 				return true;
 			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
-				int playerQuota = userConfig.getConfig().getInt("members."+player.getUniqueId().toString()+".invites-left", -1);
+				int playerQuota = userConfig.getConfig().getInt("members."+senderid.toString()+".invites-left", -1);
 				if (playerQuota >= 0) {
 					playerQuota++;
-					userConfig.getConfig().set("members."+player.getUniqueId().toString()+".invites-left", playerQuota);
+					userConfig.getConfig().set("members."+senderid.toString()+".invites-left", playerQuota);
 				}
 			}
 			uninvite(userid);
@@ -119,7 +119,7 @@ public class InvitationOnly extends JavaPlugin {
 				sender.sendMessage(ChatColor.RED + username + " hasn't been invited!");
 				return true;
 			}
-			voteApprove(userid, player.getUniqueId());
+			voteApprove(userid, senderid);
 			return true;
 		} else if (command.getName().equalsIgnoreCase("voteban")) {
 			if (player == null) {
@@ -141,7 +141,7 @@ public class InvitationOnly extends JavaPlugin {
 				sender.sendMessage(ChatColor.RED + username + " hasn't been invited!");
 				return true;
 			}
-			voteBan(userid, player.getUniqueId());
+			voteBan(userid, senderid);
 			return true;
 		} else {
 			return false;
@@ -192,8 +192,8 @@ public class InvitationOnly extends JavaPlugin {
 	public void invite(UUID userid, UUID uuid) {
 		userConfig.getConfig().createSection("invited."+userid.toString()).set("invited-by", uuid.toString());
 		userConfig.saveConfig();
-		//if (uuid.equals("$CONSOLE$")) uuid = "An admin";
-		getServer().broadcastMessage(ChatColor.YELLOW + getServer().getPlayer(uuid).getName() + " invited " + getServer().getOfflinePlayer(userid).getName() + " to the server!");
+		String inviter = (uuid.toString().equals("00000000-0000-0000-0000-000000000000")) ? "An admin" : getServer().getPlayer(uuid).getName() ;
+		getServer().broadcastMessage(ChatColor.YELLOW + inviter + " invited " + getServer().getOfflinePlayer(userid).getName() + " to the server!");
 	}
 	
 	//Won't check who invited!
@@ -201,7 +201,7 @@ public class InvitationOnly extends JavaPlugin {
 		userConfig.getConfig().set("invited."+userid.toString(), null);
 		userConfig.saveConfig();
 		if (getServer().getOfflinePlayer(userid).isOnline() && !isMember(userid) && (!getConfig().getBoolean("open-when-op-online", false) || !isOpOnline())) {
-			getServer().getPlayer(userid).kickPlayer("You were un-invited!");
+			getServer().getPlayer(userid).kickPlayer(ChatColor.GOLD + "You were un-invited!");
 		}
 		getServer().broadcastMessage(ChatColor.YELLOW + getServer().getOfflinePlayer(userid).getName() + " was un-invited. You may re-invite them.");
 	}
@@ -218,7 +218,7 @@ public class InvitationOnly extends JavaPlugin {
 		userConfig.getConfig().set("members."+userid.toString(), null);
 		userConfig.saveConfig();
 		if (getServer().getOfflinePlayer(userid).isOnline() && (!getConfig().getBoolean("open-when-op-online") || !isOpOnline())) {
-			getServer().getPlayer(userid).kickPlayer("You are no longer a member!");
+			getServer().getPlayer(userid).kickPlayer(ChatColor.GOLD + "You are no longer a member!");
 		}
 		getServer().broadcastMessage(ChatColor.YELLOW + getServer().getOfflinePlayer(userid).getName() + " is no longer a member. You may re-invite them.");
 	}
@@ -248,7 +248,7 @@ public class InvitationOnly extends JavaPlugin {
 		OfflinePlayer player = getServer().getOfflinePlayer(userid);
 		if (votesReceived >= votesNeeded) {
 			player.setBanned(true); //TODO: Change to non-deprecated BanList.addBan method when it uses UUIDs instead of usernames...
-			if (player.isOnline()) getServer().getPlayer(userid).kickPlayer("You have been banned!");
+			if (player.isOnline()) getServer().getPlayer(userid).kickPlayer(ChatColor.GOLD + "You have been banned!");
 			getServer().broadcastMessage(ChatColor.YELLOW + "The tribe has spoken!");
 			getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " has been banned and cannot be re-invited.");;
 		} else {

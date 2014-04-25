@@ -2,7 +2,7 @@ name: Invitation Only
 author: DeltaWhy, Phoenix616
 website: https://github.com/DeltaWhy/bukkit-invitation-only
 main: com.github.deltawhy.invitationonly.InvitationOnly
-version: 0.1.1
+version: 0.1.2
 permissions:
   invitationonly.approve:
     description: Approve players for full membership.
