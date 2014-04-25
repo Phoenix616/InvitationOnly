@@ -18,8 +18,11 @@ public class InvitationOnly extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command command,
 			String label, String[] args) {
 		Player player = ((sender instanceof Player) ? (Player)sender : null);
+		
+		//Set sender's uuid to "null" if it is the console sending the command to convert it to "an admin" later, if not get the player's uuid
 		UUID senderid = (player == null ? UUID.fromString("00000000-0000-0000-0000-000000000000") : player.getUniqueId());
 		
+		//Innvite command handling
 		if (command.getName().equalsIgnoreCase("invite")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
@@ -48,6 +51,8 @@ public class InvitationOnly extends JavaPlugin {
 			}
 			invite(userid, senderid);
 			return true;
+			
+		//Uninvite command handling
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
@@ -64,6 +69,8 @@ public class InvitationOnly extends JavaPlugin {
 			}
 			uninvite(userid);
 			return true;
+			
+		//Invite quota command handling	
 		} else if (command.getName().equalsIgnoreCase("invitequota")) {
 			if (player == null && args.length == 0) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
@@ -85,11 +92,15 @@ public class InvitationOnly extends JavaPlugin {
 				}
 			}
 			return true;
+
+		//Approve invite command handling	
 		} else if (command.getName().equalsIgnoreCase("approveinvite")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
 			promoteToMember(userid);
 			return true;
+
+		//Unapprove command handling		
 		} else if (command.getName().equalsIgnoreCase("unapprove")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
@@ -99,6 +110,8 @@ public class InvitationOnly extends JavaPlugin {
 			}
 			removeFromMembers(userid);
 			return true;
+			
+		//Voteapprove command handling			
 		} else if (command.getName().equalsIgnoreCase("voteapprove")) {
 			if (player == null) {
 				sender.sendMessage("This command can not be used from the console.");
@@ -121,6 +134,8 @@ public class InvitationOnly extends JavaPlugin {
 			}
 			voteApprove(userid, senderid);
 			return true;
+			
+		//Voteban command handling
 		} else if (command.getName().equalsIgnoreCase("voteban")) {
 			if (player == null) {
 				sender.sendMessage("This command can not be used from the console.");
@@ -150,13 +165,15 @@ public class InvitationOnly extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		saveDefaultConfig();
+		saveDefaultConfig();		
 		userConfig = new ConfigAccessor(this, "users.yml");
+		
 		userConfig.reloadConfig();
 		playerListener = new PlayerListener(this);
 		getServer().getPluginManager().registerEvents(playerListener, this);
 	}
 	
+	//Function to get the uuid of an offline player by name... rare use is suggest by bukkit staff!
 	@SuppressWarnings("deprecation")
 	public UUID getOfflinePlayerUUID(String username) {
 		return getServer().getOfflinePlayer(username).getUniqueId();
@@ -239,7 +256,7 @@ public class InvitationOnly extends JavaPlugin {
 		userConfig.saveConfig();
 	}
 	
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation") //Because of setBanned(), look TODO below
 	private void voteBan(UUID userid, UUID voterid) {
 		List<String> banVotes = userConfig.getConfig().getStringList("invited."+userid.toString()+".ban-votes");
 		if (!banVotes.contains(voterid.toString())) banVotes.add(voterid.toString());
