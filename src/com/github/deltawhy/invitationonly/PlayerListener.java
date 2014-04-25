@@ -1,5 +1,7 @@
 package com.github.deltawhy.invitationonly;
 
+import java.util.UUID;
+
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
@@ -16,9 +18,10 @@ public class PlayerListener implements Listener {
 	public void onPlayerLogin(PlayerLoginEvent e) {
 		if (e.getResult() != PlayerLoginEvent.Result.ALLOWED) return;
 		Player player = e.getPlayer();
-		if (player.isOp()) return;
-		if (plugin.isMember(player.getUniqueId())) return;
-		if (plugin.isInvited(player.getUniqueId())) {
+		UUID userid = player.getUniqueId();
+		plugin.updateConfigName(userid, player.getName());
+		if (player.isOp() || plugin.isMember(userid)) return;
+		if (plugin.isInvited(userid)) {
 			if (plugin.getConfig().getBoolean("require-op-online", false) && !plugin.isOpOnline()) {
 				e.setResult(PlayerLoginEvent.Result.KICK_WHITELIST);
 				e.setKickMessage(ChatColor.YELLOW + "You can't join this server unless an op is online!");

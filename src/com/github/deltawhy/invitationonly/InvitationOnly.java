@@ -1,5 +1,6 @@
 package com.github.deltawhy.invitationonly;
 
+import java.io.File;
 import java.util.List;
 import java.util.UUID;
 
@@ -167,7 +168,6 @@ public class InvitationOnly extends JavaPlugin {
 	public void onEnable() {
 		saveDefaultConfig();		
 		userConfig = new ConfigAccessor(this, "users.yml");
-		
 		userConfig.reloadConfig();
 		playerListener = new PlayerListener(this);
 		getServer().getPluginManager().registerEvents(playerListener, this);
@@ -207,7 +207,9 @@ public class InvitationOnly extends JavaPlugin {
 	
 	//Won't check quotas here!
 	public void invite(UUID userid, UUID uuid) {
+		String username = getServer().getOfflinePlayer(userid).getName();
 		userConfig.getConfig().createSection("invited."+userid.toString()).set("invited-by", uuid.toString());
+		userConfig.getConfig().set("invited."+userid.toString()+".name", username);
 		userConfig.saveConfig();
 		String inviter = (uuid.toString().equals("00000000-0000-0000-0000-000000000000")) ? "An admin" : getServer().getPlayer(uuid).getName() ;
 		getServer().broadcastMessage(ChatColor.YELLOW + inviter + " invited " + getServer().getOfflinePlayer(userid).getName() + " to the server!");
@@ -224,10 +226,12 @@ public class InvitationOnly extends JavaPlugin {
 	}
 	
 	public void promoteToMember(UUID userid) {
+		String username = getServer().getOfflinePlayer(userid).getName();
 		userConfig.getConfig().set("invited."+userid.toString(), null);
 		userConfig.getConfig().set("members."+userid.toString()+".invites-left", getConfig().getInt("invite-quota", 0));
+		userConfig.getConfig().set("members."+userid.toString()+".name", username);
 		userConfig.saveConfig();
-		getServer().broadcastMessage(ChatColor.YELLOW + getServer().getOfflinePlayer(userid).getName() + " is now a member! Congratulations!");
+		getServer().broadcastMessage(ChatColor.YELLOW + username + " is now a member! Congratulations!");
 	}
 	
 	public void removeFromMembers(UUID userid) {
@@ -274,5 +278,18 @@ public class InvitationOnly extends JavaPlugin {
 		}
 		userConfig.getConfig().set("invited."+userid.toString()+".ban-votes", banVotes);
 		userConfig.saveConfig();
+	}
+
+	//Function to update the name of a player to save the last known name and make the users.yml more readable for humans
+	public void updateConfigName(UUID userid, String username) {
+		if (isInvited(userid)) {
+			userConfig.getConfig().set("invited."+userid.toString()+".name", username);
+			
+		}
+		if (isMember(userid)) {
+			userConfig.getConfig().set("members."+userid.toString()+".name", username);
+		}
+		// TODO Auto-generated method stub
+		
 	}
 }
