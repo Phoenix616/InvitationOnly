@@ -317,4 +317,20 @@ public class InvitationOnly extends JavaPlugin {
 			userConfig.getConfig().set("members."+userid.toString()+".name", username);
 		}		
 	}
+
+	//Check if we have to kick invited players because all OPs/Members are gone.
+	public void checkPlayers() {
+		if (getConfig().getBoolean("require-op-online", false) && !isOpOnline()) {
+			getLogger().info("There is no OP online anymore. Searching for players who are only invited.");
+			for (Player p : getServer().getOnlinePlayers()) 
+				if (isInvited(p.getUniqueId()) && !p.isOp()) 
+					p.kickPlayer(ChatColor.YELLOW + "You were kicked because invited players can't play on this server without an OP online!");
+		} else if (getConfig().getBoolean("require-member-online", false) && !isMemberOnline()) {
+			getLogger().info("There is no member online anymore. Searching for players who are only invited.");
+			for (Player p : getServer().getOnlinePlayers()) 
+				if (isInvited(p.getUniqueId()) && !p.isOp()) 
+					p.kickPlayer(ChatColor.YELLOW + "You were kicked because invited players can't play on this server without an member online!");
+		}
+		
+	}
 }

@@ -2,6 +2,7 @@ package com.github.deltawhy.invitationonly;
 
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
@@ -38,5 +39,17 @@ public class PlayerListener implements Listener {
 			e.setKickMessage(ChatColor.RED + "You must be invited to join this server!");
 			if (plugin.getConfig().getBoolean("broadcast-failed-logins", true)) plugin.getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " tried to join but hasn't been invited.");
 		}
+	}
+	
+	//Event for kicking players if there are no OPs/members online anymore!
+	@EventHandler
+	public void onPlayerDisconnect(PlayerQuitEvent e){
+		//1 Tick wait because the PlayerQuitEvent gets invoked before the player actually has left the server!
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this.plugin, new Runnable() {
+			@Override
+			public void run() {
+				plugin.checkPlayers();
+			}
+		}, 1L);	
 	}
 }
