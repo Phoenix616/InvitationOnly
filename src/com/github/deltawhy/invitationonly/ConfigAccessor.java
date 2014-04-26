@@ -88,4 +88,11 @@ public class ConfigAccessor {
         }
     }
 
+	public File getFile() {
+		File dataFolder = plugin.getDataFolder();
+        if (dataFolder == null)
+            throw new IllegalStateException();
+        return new File(dataFolder, fileName);
+	}
+
 }

@@ -2,6 +2,7 @@ package com.github.deltawhy.invitationonly;
 
 import java.io.File;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
@@ -16,8 +17,7 @@ public class InvitationOnly extends JavaPlugin {
 	PlayerListener playerListener;
 	
 	@Override
-	public boolean onCommand(CommandSender sender, Command command,
-			String label, String[] args) {
+	public boolean onCommand(CommandSender sender, Command command,	String label, String[] args) {
 		Player player = ((sender instanceof Player) ? (Player)sender : null);
 		
 		//Set sender's uuid to "null" if it is the console sending the command to convert it to "an admin" later, if not get the player's uuid
@@ -57,8 +57,14 @@ public class InvitationOnly extends JavaPlugin {
 		} else if (command.getName().equalsIgnoreCase("uninvite")) {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
+			String username = getServer().getOfflinePlayer(userid).getName();
+			if (!userConfig.getConfig().contains("invited." + userid)) {
+				if(userConfig.getConfig().contains("members." + userid)) sender.sendMessage(ChatColor.RED + username + "is a member! Remove him with /unapprove " + username + ".");
+				else sender.sendMessage(ChatColor.RED + username + "is not invited!");
+				return true;				
+			} 
 			if (!senderid.equals(whoInvited(userid))) {
-				sender.sendMessage(ChatColor.RED + "You didn't invite " + getServer().getOfflinePlayer(userid).getName() + "!");
+				sender.sendMessage(ChatColor.RED + "You didn't invite " + username + "!");
 				return true;
 			}
 			if (player != null && !player.hasPermission("invitationonly.invite.unlimited")) {
@@ -169,6 +175,23 @@ public class InvitationOnly extends JavaPlugin {
 		saveDefaultConfig();		
 		userConfig = new ConfigAccessor(this, "users.yml");
 		userConfig.reloadConfig();
+		File userConfigFile =  userConfig.getFile();
+		//Convert whitelist.json to members in users.yml if no users.yml exists (aka first start with plugin)
+		if(!userConfigFile.isFile()) {
+			this.getLogger().info("There seems to be no users.yml. Generating it from the whitelist and adding whitelisted players to members group!");
+		    Set<OfflinePlayer> whitelist = getServer().getWhitelistedPlayers();
+		    if(whitelist.isEmpty()) this.getLogger().info("The whitelist seems to be empty! Not adding any members.");
+		    else {
+		    	for(OfflinePlayer player : whitelist) {
+			    	UUID userid = player.getUniqueId();
+					if (player != null && !isMember(userid)) {
+						promoteToMember(userid);
+						this.getLogger().info("Added " + player.getName() + ".");
+					}
+			    }
+			this.getLogger().info("Finished converting the whitelist to the users.yml! " + whitelist.size() + " new members added to the users.yml!");
+		    }		    	
+		}
 		playerListener = new PlayerListener(this);
 		getServer().getPluginManager().registerEvents(playerListener, this);
 	}
@@ -283,13 +306,10 @@ public class InvitationOnly extends JavaPlugin {
 	//Function to update the name of a player to save the last known name and make the users.yml more readable for humans
 	public void updateConfigName(UUID userid, String username) {
 		if (isInvited(userid)) {
-			userConfig.getConfig().set("invited."+userid.toString()+".name", username);
-			
+			userConfig.getConfig().set("invited."+userid.toString()+".name", username);			
 		}
 		if (isMember(userid)) {
 			userConfig.getConfig().set("members."+userid.toString()+".name", username);
-		}
-		// TODO Auto-generated method stub
-		
+		}		
 	}
 }
