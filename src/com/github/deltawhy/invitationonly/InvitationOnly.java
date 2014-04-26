@@ -172,7 +172,7 @@ public class InvitationOnly extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		saveDefaultConfig();		
+		saveDefaultConfig();
 		userConfig = new ConfigAccessor(this, "users.yml");
 		userConfig.reloadConfig();
 		File userConfigFile =  userConfig.getFile();
@@ -183,12 +183,12 @@ public class InvitationOnly extends JavaPlugin {
 		    if(whitelist.isEmpty()) this.getLogger().info("The whitelist seems to be empty! Not adding any members.");
 		    else {
 		    	for(OfflinePlayer player : whitelist) {
-			    	UUID userid = player.getUniqueId();
+		    		UUID userid = player.getUniqueId();
 					if (player != null && !isMember(userid)) {
 						promoteToMember(userid);
 						this.getLogger().info("Added " + player.getName() + ".");
 					}
-			    }
+		    	}
 			this.getLogger().info("Finished converting the whitelist to the users.yml! " + whitelist.size() + " new members added to the users.yml!");
 		    }		    	
 		}
