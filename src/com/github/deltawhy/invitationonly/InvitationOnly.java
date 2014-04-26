@@ -105,6 +105,7 @@ public class InvitationOnly extends JavaPlugin {
 			if (args.length != 1) return false;
 			UUID userid = getOfflinePlayerUUID(args[0]);
 			promoteToMember(userid);
+			getServer().getOfflinePlayer(userid).setWhitelisted(true);
 			return true;
 
 		//Unapprove command handling		
@@ -116,6 +117,7 @@ public class InvitationOnly extends JavaPlugin {
 				return true;
 			}
 			removeFromMembers(userid);
+			getServer().getOfflinePlayer(userid).setWhitelisted(false);
 			return true;
 			
 		//Voteapprove command handling			
@@ -260,6 +262,7 @@ public class InvitationOnly extends JavaPlugin {
 	public void removeFromMembers(UUID userid) {
 		userConfig.getConfig().set("invited."+userid.toString(), null);
 		userConfig.getConfig().set("members."+userid.toString(), null);
+		getServer().getOfflinePlayer(userid).setWhitelisted(false);
 		userConfig.saveConfig();
 		if (getServer().getOfflinePlayer(userid).isOnline() && (!getConfig().getBoolean("open-when-op-online") || !isOpOnline())) {
 			getServer().getPlayer(userid).kickPlayer(ChatColor.GOLD + "You are no longer a member!");
@@ -275,6 +278,7 @@ public class InvitationOnly extends JavaPlugin {
 		if (votesReceived >= votesNeeded) {
 			getServer().broadcastMessage(ChatColor.YELLOW + "The tribe has spoken!");
 			promoteToMember(userid);
+			getServer().getOfflinePlayer(userid).setWhitelisted(true);
 		} else {
 			getServer().broadcastMessage(ChatColor.YELLOW + getServer().getPlayer(voterid).getName()+ " voted to make " + getServer().getOfflinePlayer(userid).getName()
 					+ " a member. " + (votesNeeded - votesReceived) + " more votes needed.");
@@ -292,6 +296,7 @@ public class InvitationOnly extends JavaPlugin {
 		OfflinePlayer player = getServer().getOfflinePlayer(userid);
 		if (votesReceived >= votesNeeded) {
 			player.setBanned(true); //TODO: Change to non-deprecated BanList.addBan method when it uses UUIDs instead of usernames...
+			player.setWhitelisted(false);
 			if (player.isOnline()) getServer().getPlayer(userid).kickPlayer(ChatColor.GOLD + "You have been banned!");
 			getServer().broadcastMessage(ChatColor.YELLOW + "The tribe has spoken!");
 			getServer().broadcastMessage(ChatColor.YELLOW + player.getName() + " has been banned and cannot be re-invited.");;
